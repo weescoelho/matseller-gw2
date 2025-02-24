@@ -12,18 +12,34 @@ interface Material {
   id: number;
   name: string;
   category: string;
-  quantity: number;
-  price: number;
+  count: number;
+  price: {
+    buy: number;
+    sell: number;
+  };
 }
 
 interface MaterialsGridProps {
   materials: Material[];
 }
 
-export function MaterialsGrid({ materials }: MaterialsGridProps) {
-  const categories = [...new Set(materials.map((m) => m.category))];
+// Mapeamento de categorias
+const CATEGORIES = {
+  5: "Materiais de Crafting",
+  6: "Consumíveis",
+  29: "Troféus",
+  30: "Ingredientes de Cozinha",
+  37: "Materiais Ascendidos",
+  38: "Materiais Refinados",
+  46: "Materiais de Guild Hall",
+  49: "Materiais de Festival",
+  50: "Materiais de Mapa",
+};
 
+export function MaterialsGrid({ materials }: MaterialsGridProps) {
   const formatGold = (copper: number) => {
+    if (!copper || isNaN(copper)) return "0g 0s 0c";
+
     const gold = Math.floor(copper / 10000);
     const silver = Math.floor((copper % 10000) / 100);
     const copperRemaining = copper % 100;
@@ -32,15 +48,33 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
   };
 
   const calculateTotalValue = (materials: Material[]) => {
-    return materials.reduce(
-      (total, mat) => total + mat.quantity * mat.price,
-      0
-    );
+    return materials.reduce((total, mat) => {
+      const sellPrice = mat.price.sell || 0;
+      return total + mat.count * sellPrice;
+    }, 0);
   };
+
+  // Agrupa materiais por categoria
+  const materialsByCategory = materials.reduce((acc, material) => {
+    const categoryName =
+      CATEGORIES[material.category as keyof typeof CATEGORIES] ||
+      `Categoria ${material.category}`;
+
+    if (!acc[categoryName]) {
+      acc[categoryName] = [];
+    }
+
+    if (material.count > 0) {
+      // Mostra apenas itens com quantidade > 0
+      acc[categoryName].push(material);
+    }
+
+    return acc;
+  }, {} as Record<string, Material[]>);
 
   return (
     <div className="grid gap-4">
-      {categories.map((category) => (
+      {Object.entries(materialsByCategory).map(([category, items]) => (
         <Card key={category} className="p-4">
           <h3 className="text-lg font-bold mb-4">{category}</h3>
           <Table>
@@ -48,33 +82,26 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Quantidade</TableHead>
-                <TableHead>Preço Unitário</TableHead>
+                <TableHead>Preço de Venda</TableHead>
                 <TableHead>Valor Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {materials
-                .filter((m) => m.category === category)
-                .map((material) => (
-                  <TableRow key={material.id}>
-                    <TableCell>{material.name}</TableCell>
-                    <TableCell>{material.quantity}</TableCell>
-                    <TableCell>{formatGold(material.price)}</TableCell>
-                    <TableCell>
-                      {formatGold(material.quantity * material.price)}
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {items.map((material) => (
+                <TableRow key={material.id}>
+                  <TableCell>{material.name}</TableCell>
+                  <TableCell>{material.count}</TableCell>
+                  <TableCell>{formatGold(material.price.sell)}</TableCell>
+                  <TableCell>
+                    {formatGold(material.count * material.price.sell)}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
           <div className="mt-4 text-right">
             <p className="font-bold">
-              Total da Categoria:{" "}
-              {formatGold(
-                calculateTotalValue(
-                  materials.filter((m) => m.category === category)
-                )
-              )}
+              Total da Categoria: {formatGold(calculateTotalValue(items))}
             </p>
           </div>
         </Card>

@@ -8,10 +8,15 @@ import { MaterialsGrid } from "@/components/MaterialsGrid";
 interface Material {
   id: number;
   name: string;
-  category: string;
-  quantity: number;
-  price: number;
+  category: number;
+  count: number;
+  price: {
+    buy: number;
+    sell: number;
+  };
 }
+
+const PROXY_URL = "http://localhost:8080";
 
 export default function App() {
   const [apiKey, setApiKey] = useState<string>("");
@@ -19,43 +24,106 @@ export default function App() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Função auxiliar para dividir array em chunks
+  const chunkArray = (array: number[], size: number) => {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+  };
+
+  const fetchItemDetails = async (ids: number[]) => {
+    try {
+      const chunks = chunkArray(ids, 200);
+      const allDetails = [];
+
+      for (const chunk of chunks) {
+        const response = await fetch(
+          `${PROXY_URL}/https://api.guildwars2.com/v2/items?ids=${chunk.join(
+            ","
+          )}`
+        );
+        const data = await response.json();
+        allDetails.push(...data);
+      }
+
+      return allDetails;
+    } catch (error) {
+      console.error("Erro ao buscar detalhes dos itens:", error);
+      return [];
+    }
+  };
+
+  const fetchPrices = async (ids: number[]) => {
+    try {
+      const chunks = chunkArray(ids, 200);
+      const allPrices = [];
+
+      for (const chunk of chunks) {
+        const response = await fetch(
+          `${PROXY_URL}/https://api.guildwars2.com/v2/commerce/prices?ids=${chunk.join(
+            ","
+          )}`
+        );
+        const data = await response.json();
+        allPrices.push(...data);
+      }
+
+      return allPrices;
+    } catch (error) {
+      console.error("Erro ao buscar preços:", error);
+      return [];
+    }
+  };
+
   const fetchMaterials = async () => {
     setLoading(true);
     try {
-      // Buscar materiais do banco
-      const response = await fetch(
-        `https://api.guildwars2.com/v2/account/materials`,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        }
+      // Busca materiais do banco
+      const materialsResponse = await fetch(
+        `${PROXY_URL}/https://api.guildwars2.com/v2/account/materials?access_token=${apiKey}`
       );
+      const materialsData = await materialsResponse.json();
 
-      const data = await response.json();
-
-      // Mapear e enriquecer dados com preços
-      const enrichedMaterials = await Promise.all(
-        data.map(async (material: any) => {
-          const itemDetails = await fetch(
-            `https://api.guildwars2.com/v2/items/${material.id}`
-          );
-          const priceDetails = await fetch(
-            `https://api.guildwars2.com/v2/commerce/prices/${material.id}`
-          );
-
-          const item = await itemDetails.json();
-          const price = await priceDetails.json();
-
-          return {
-            id: material.id,
-            name: item.name,
-            category: item.type,
-            quantity: material.count,
-            price: price.sells.unit_price,
-          };
-        })
+      // Filtra apenas itens com quantidade > 0
+      const validMaterials = materialsData.filter(
+        (item: any) => item.count > 0
       );
+      const itemIds = validMaterials.map((item: any) => item.id);
+
+      // Busca detalhes dos itens e preços em paralelo
+      const [itemDetails, priceDetails] = await Promise.all([
+        fetchItemDetails(itemIds),
+        fetchPrices(itemIds),
+      ]);
+
+      // Cria um mapa de preços para fácil acesso
+      const priceMap = priceDetails.reduce((acc: any, price: any) => {
+        acc[price.id] = {
+          buy: price.buys?.unit_price || 0,
+          sell: price.sells?.unit_price || 0,
+        };
+        return acc;
+      }, {});
+
+      // Cria um mapa de detalhes dos itens
+      const itemMap = itemDetails.reduce((acc: any, item: any) => {
+        acc[item.id] = {
+          name: item.name,
+          category: item.type,
+        };
+        return acc;
+      }, {});
+
+      // Combina todos os dados
+      const enrichedMaterials = validMaterials.map((material: any) => ({
+        id: material.id,
+        name: itemMap[material.id]?.name || "Item Desconhecido",
+        category: itemMap[material.id]?.category || "Sem Categoria",
+        count: material.count,
+        price: priceMap[material.id] || { buy: 0, sell: 0 },
+      }));
 
       setMaterials(enrichedMaterials);
     } catch (error) {
