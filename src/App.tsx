@@ -18,8 +18,6 @@ interface Material {
   icon?: string;
 }
 
-const PROXY_URL = "http://localhost:8080";
-
 export default function App() {
   const [apiKey, setApiKey] = useState<string>("");
   const [showDialog, setShowDialog] = useState(true);
@@ -42,9 +40,7 @@ export default function App() {
 
       for (const chunk of chunks) {
         const response = await fetch(
-          `${PROXY_URL}/https://api.guildwars2.com/v2/items?ids=${chunk.join(
-            ","
-          )}`
+          `https://api.guildwars2.com/v2/items?ids=${chunk.join(",")}`
         );
         const data = await response.json();
         allDetails.push(...data);
@@ -64,9 +60,7 @@ export default function App() {
 
       for (const chunk of chunks) {
         const response = await fetch(
-          `${PROXY_URL}/https://api.guildwars2.com/v2/commerce/prices?ids=${chunk.join(
-            ","
-          )}`
+          `https://api.guildwars2.com/v2/commerce/prices?ids=${chunk.join(",")}`
         );
         const data = await response.json();
         allPrices.push(...data);
@@ -84,7 +78,7 @@ export default function App() {
     try {
       // Busca materiais do banco
       const materialsResponse = await fetch(
-        `${PROXY_URL}/https://api.guildwars2.com/v2/account/materials?access_token=${apiKey}`
+        `https://api.guildwars2.com/v2/account/materials?access_token=${apiKey}`
       );
       const materialsData = await materialsResponse.json();
 
