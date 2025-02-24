@@ -23,17 +23,31 @@ interface MaterialsGridProps {
   materials: Material[];
 }
 
-// Mapeamento de categorias
-const CATEGORIES = {
-  5: "Materiais de Crafting",
-  6: "Consumíveis",
-  29: "Troféus",
-  30: "Ingredientes de Cozinha",
-  37: "Materiais Ascendidos",
-  38: "Materiais Refinados",
-  46: "Materiais de Guild Hall",
-  49: "Materiais de Festival",
-  50: "Materiais de Mapa",
+// Mapeamento de categorias específicas do GW2
+const MATERIAL_CATEGORIES = {
+  "Basic Crafting Materials": [
+    "Wood",
+    "Ore",
+    "Cloth",
+    "Leather",
+    "Metal",
+    "Basic",
+    "Common",
+    "Fine",
+    "Coarse",
+  ],
+  "Intermediate Crafting Materials": [
+    "Refined",
+    "Component",
+    "Inscription",
+    "Insignia",
+  ],
+  "Advanced Crafting Materials": ["Rare", "Exotic", "Elite", "Superior"],
+  "Ascended Materials": ["Ascended", "Bloodstone", "Dragonite", "Empyreal"],
+  "Gemstones and Jewels": ["Gem", "Jewel", "Crystal"],
+  "Cooking Materials": ["Cooking", "Ingredient", "Seasoning", "Food"],
+  "Scribing Materials": ["Scribing", "Decoration", "Resonating"],
+  "Festive Materials": ["Festival", "Holiday", "Wintersday", "Halloween"],
 };
 
 export function MaterialsGrid({ materials }: MaterialsGridProps) {
@@ -54,62 +68,86 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
     }, 0);
   };
 
-  // Agrupa materiais por categoria
+  // Função para categorizar materiais
+  const categorizeMaterial = (material: Material) => {
+    const materialName = material.name.toLowerCase();
+
+    for (const [category, keywords] of Object.entries(MATERIAL_CATEGORIES)) {
+      if (
+        keywords.some(
+          (keyword) =>
+            materialName.includes(keyword.toLowerCase()) ||
+            material.category.toLowerCase().includes(keyword.toLowerCase())
+        )
+      ) {
+        return category;
+      }
+    }
+    return "Outros Materiais";
+  };
+
+  // Agrupa materiais nas categorias definidas
   const materialsByCategory = materials.reduce((acc, material) => {
-    const categoryName =
-      CATEGORIES[material.category as keyof typeof CATEGORIES] ||
-      `Categoria ${material.category}`;
-
-    if (!acc[categoryName]) {
-      acc[categoryName] = [];
+    const category = categorizeMaterial(material);
+    if (!acc[category]) {
+      acc[category] = [];
     }
-
-    if (material.count > 0) {
-      // Mostra apenas itens com quantidade > 0
-      acc[categoryName].push(material);
-    }
-
+    acc[category].push(material);
     return acc;
   }, {} as Record<string, Material[]>);
 
+  // Ordena materiais por valor dentro de cada categoria
+  Object.values(materialsByCategory).forEach((categoryMaterials) => {
+    categoryMaterials.sort(
+      (a, b) => b.price.sell * b.count - a.price.sell * a.count
+    );
+  });
+
+  const totalValue = calculateTotalValue(materials);
+
   return (
     <div className="grid gap-4">
-      {Object.entries(materialsByCategory).map(([category, items]) => (
-        <Card key={category} className="p-4">
-          <h3 className="text-lg font-bold mb-4">{category}</h3>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Quantidade</TableHead>
-                <TableHead>Preço de Venda</TableHead>
-                <TableHead>Valor Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((material) => (
-                <TableRow key={material.id}>
-                  <TableCell>{material.name}</TableCell>
-                  <TableCell>{material.count}</TableCell>
-                  <TableCell>{formatGold(material.price.sell)}</TableCell>
-                  <TableCell>
-                    {formatGold(material.count * material.price.sell)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="mt-4 text-right">
-            <p className="font-bold">
-              Total da Categoria: {formatGold(calculateTotalValue(items))}
-            </p>
-          </div>
-        </Card>
-      ))}
+      {Object.entries(materialsByCategory).map(
+        ([category, items]) =>
+          items.length > 0 && (
+            <Card key={category} className="p-4">
+              <h3 className="text-lg font-bold mb-4">{category}</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Quantidade</TableHead>
+                    <TableHead>Preço de Venda</TableHead>
+                    <TableHead>Valor Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((material) => (
+                    <TableRow key={material.id}>
+                      <TableCell>{material.name}</TableCell>
+                      <TableCell>{material.count}</TableCell>
+                      <TableCell>{formatGold(material.price.sell)}</TableCell>
+                      <TableCell>
+                        {formatGold(material.count * material.price.sell)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="mt-4 text-right">
+                <p className="font-bold">
+                  Total da Categoria: {formatGold(calculateTotalValue(items))} (
+                  {((calculateTotalValue(items) / totalValue) * 100).toFixed(1)}
+                  %)
+                </p>
+              </div>
+            </Card>
+          )
+      )}
 
-      <Card className="p-4 mt-4">
+      <Card className="p-4 mt-4 bg-primary/10">
         <p className="text-xl font-bold text-right">
-          Valor Total: {formatGold(calculateTotalValue(materials))}
+          Valor Total de Todos os Materiais: {formatGold(totalValue)}
         </p>
       </Card>
     </div>
