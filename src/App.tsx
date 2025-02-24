@@ -8,12 +8,13 @@ import { MaterialsGrid } from "@/components/MaterialsGrid";
 interface Material {
   id: number;
   name: string;
-  category: number;
+  category: string;
   count: number;
   price: {
     buy: number;
     sell: number;
   };
+  icon?: string;
 }
 
 const PROXY_URL = "http://localhost:8080";
@@ -112,6 +113,7 @@ export default function App() {
         acc[item.id] = {
           name: item.name,
           category: item.type,
+          icon: item.icon,
         };
         return acc;
       }, {});
@@ -123,6 +125,7 @@ export default function App() {
         category: itemMap[material.id]?.category || "Sem Categoria",
         count: material.count,
         price: priceMap[material.id] || { buy: 0, sell: 0 },
+        icon: itemMap[material.id]?.icon,
       }));
 
       setMaterials(enrichedMaterials);

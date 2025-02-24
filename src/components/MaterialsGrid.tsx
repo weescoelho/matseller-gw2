@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Image from "next/image";
 
 interface Material {
   id: number;
@@ -17,37 +18,45 @@ interface Material {
     buy: number;
     sell: number;
   };
+  icon?: string;
 }
 
 interface MaterialsGridProps {
   materials: Material[];
 }
 
-// Mapeamento de categorias específicas do GW2
+// Categorias baseadas no repositório original
 const MATERIAL_CATEGORIES = {
-  "Basic Crafting Materials": [
-    "Wood",
-    "Ore",
-    "Cloth",
-    "Leather",
-    "Metal",
-    "Basic",
-    "Common",
-    "Fine",
-    "Coarse",
+  "Basic Materials": [2, 3, 4, 5, 6], // Tier 1-6 Basic Materials
+  "Fine Materials": [24, 25, 26, 27, 28, 29], // Tier 1-6 Fine Materials
+  "Rare Materials": [30, 31, 32, 33, 34, 35], // Tier 1-6 Rare Materials
+  "Cooking Materials": [
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23, // Cooking Materials
   ],
-  "Intermediate Crafting Materials": [
-    "Refined",
-    "Component",
-    "Inscription",
-    "Insignia",
+  "Ascended Materials": [37, 38, 39, 40], // Ascended Materials
+  "Refined Materials": [
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51, // Refined Materials
   ],
-  "Advanced Crafting Materials": ["Rare", "Exotic", "Elite", "Superior"],
-  "Ascended Materials": ["Ascended", "Bloodstone", "Dragonite", "Empyreal"],
-  "Gemstones and Jewels": ["Gem", "Jewel", "Crystal"],
-  "Cooking Materials": ["Cooking", "Ingredient", "Seasoning", "Food"],
-  "Scribing Materials": ["Scribing", "Decoration", "Resonating"],
-  "Festive Materials": ["Festival", "Holiday", "Wintersday", "Halloween"],
 };
 
 export function MaterialsGrid({ materials }: MaterialsGridProps) {
@@ -68,18 +77,10 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
     }, 0);
   };
 
-  // Função para categorizar materiais
+  // Função para categorizar materiais baseado no ID da categoria
   const categorizeMaterial = (material: Material) => {
-    const materialName = material.name.toLowerCase();
-
-    for (const [category, keywords] of Object.entries(MATERIAL_CATEGORIES)) {
-      if (
-        keywords.some(
-          (keyword) =>
-            materialName.includes(keyword.toLowerCase()) ||
-            material.category.toLowerCase().includes(keyword.toLowerCase())
-        )
-      ) {
+    for (const [category, ids] of Object.entries(MATERIAL_CATEGORIES)) {
+      if (ids.includes(material.id)) {
         return category;
       }
     }
@@ -115,6 +116,7 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Item</TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>Quantidade</TableHead>
                     <TableHead>Preço de Venda</TableHead>
@@ -124,6 +126,18 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
                 <TableBody>
                   {items.map((material) => (
                     <TableRow key={material.id}>
+                      <TableCell>
+                        {material.icon && (
+                          <div className="w-8 h-8 relative">
+                            <Image
+                              src={material.icon}
+                              alt={material.name}
+                              fill
+                              className="object-contain"
+                            />
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>{material.name}</TableCell>
                       <TableCell>{material.count}</TableCell>
                       <TableCell>{formatGold(material.price.sell)}</TableCell>
