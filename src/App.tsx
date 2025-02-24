@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -126,8 +126,6 @@ export default function App() {
         icon: itemMap[material.id]?.icon,
       }));
 
-      console.log(enrichedMaterials);
-
       setMaterials(enrichedMaterials);
     } catch (error) {
       console.error("Erro ao buscar materiais:", error);
@@ -139,8 +137,16 @@ export default function App() {
   const handleApiKeySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setShowDialog(false);
+    localStorage.setItem("api-key", apiKey);
     fetchMaterials();
   };
+
+  useEffect(() => {
+    const apiKey = localStorage.getItem("api-key");
+    if (apiKey) {
+      setApiKey(apiKey);
+    }
+  }, []);
 
   return (
     <div className="container mx-auto p-4">
@@ -152,7 +158,10 @@ export default function App() {
           <form onSubmit={handleApiKeySubmit}>
             <Input
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              onChange={(e) => {
+                setApiKey(e.target.value);
+              }}
+              type="password"
               placeholder="Cole sua API Key aqui"
               className="mb-4"
             />

@@ -8,6 +8,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Image from "next/image";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "./ui/accordion";
 
 interface Material {
   id: number;
@@ -67,78 +73,98 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
   });
 
   const totalValue = calculateTotalValue(materials);
+  const totalBuyValue = calculateBuyTotalValue(materials);
 
   return (
     <div className="grid gap-4">
-      <Card className="p-4 mt-4 bg-primary/10">
-        <p className="text-xl font-bold text-right">
-          Valor Total de Todos os Materiais: {formatGold(totalValue)}
+      <Card className="p-4 mt-4 bg-primary/10 flex items-center justify-between md:flex-row flex-col">
+        <p className="text-sm md:text-lg font-bold ">
+          Valor Total (Ordem de venda): {formatGold(totalValue)}
+        </p>
+        <p className="text-sm md:text-lg font-bold ">
+          Valor Total (Ordem de compra): {formatGold(totalBuyValue)}
         </p>
       </Card>
-      {Object.entries(materialsByCategory).map(
-        ([category, items]) =>
-          items.length > 0 && (
-            <Card key={category} className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">{category}</h3>
-                <div className="text-right">
-                  <p className="font-bold">
-                    Total da Categoria (Ordem de venda):{" "}
-                    {formatGold(calculateTotalValue(items))} (
-                    {((calculateTotalValue(items) / totalValue) * 100).toFixed(
-                      1
-                    )}
-                    %)
-                  </p>
-                  <p className="font-bold">
-                    Total da Categoria (Ordem de compra):{" "}
-                    {formatGold(calculateBuyTotalValue(items))} (
-                    {(
-                      (calculateBuyTotalValue(items) / totalValue) *
-                      100
-                    ).toFixed(1)}
-                    %)
-                  </p>
+      <Accordion type="single" collapsible className="w-full">
+        {Object.entries(materialsByCategory).map(
+          ([category, items]) =>
+            items.length > 0 && (
+              <Card key={category} className="p-4">
+                <div className="flex items-center justify-between mb-4 md:flex-row flex-col">
+                  <h3 className="text-lg font-bold">{category}</h3>
+                  <div className="md:text-right">
+                    <p className="text-blue-600">
+                      Total (Ordem de venda):{" "}
+                      {formatGold(calculateTotalValue(items))} (
+                      {(
+                        (calculateTotalValue(items) / totalValue) *
+                        100
+                      ).toFixed(1)}
+                      %)
+                    </p>
+                    <p className="text-red-600">
+                      Total (Ordem de compra):{" "}
+                      {formatGold(calculateBuyTotalValue(items))} (
+                      {(
+                        (calculateBuyTotalValue(items) / totalValue) *
+                        100
+                      ).toFixed(1)}
+                      %)
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Quantidade</TableHead>
-                    <TableHead>Preço de Venda</TableHead>
-                    <TableHead>Valor Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((material) => (
-                    <TableRow key={material.id}>
-                      <TableCell>
-                        {material.icon && (
-                          <div className="w-8 h-8 relative">
-                            <Image
-                              src={material.icon}
-                              alt={material.name}
-                              fill
-                              className="object-contain"
-                            />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>{material.name}</TableCell>
-                      <TableCell>{material.count}</TableCell>
-                      <TableCell>{formatGold(material.price.sell)}</TableCell>
-                      <TableCell>
-                        {formatGold(material.count * material.price.sell)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          )
-      )}
+                <AccordionItem value={category}>
+                  <AccordionTrigger>Expandir</AccordionTrigger>
+                  <AccordionContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead className="max-w-2 md:max-w-none">
+                            Nome
+                          </TableHead>
+                          <TableHead>Qtd.</TableHead>
+                          <TableHead className="hidden md:block">
+                            Preço de Venda
+                          </TableHead>
+                          <TableHead>Valor Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {items.map((material) => (
+                          <TableRow key={material.id}>
+                            <TableCell>
+                              {material.icon && (
+                                <div className="w-8 h-8 relative">
+                                  <Image
+                                    src={material.icon}
+                                    alt={material.name}
+                                    fill
+                                    className="object-contain"
+                                  />
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="max-w-24 md:max-w-none">
+                              {material.name}
+                            </TableCell>
+                            <TableCell>{material.count}</TableCell>
+                            <TableCell className="hidden md:block">
+                              {formatGold(material.price.sell)}
+                            </TableCell>
+                            <TableCell>
+                              {formatGold(material.count * material.price.sell)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </AccordionContent>
+                </AccordionItem>
+              </Card>
+            )
+        )}
+      </Accordion>
     </div>
   );
 }
