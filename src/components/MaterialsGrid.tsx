@@ -44,7 +44,13 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
     }, 0);
   };
 
-  // Agrupa materiais nas categorias definidas
+  const calculateBuyTotalValue = (materials: Material[]) => {
+    return materials.reduce((total, mat) => {
+      const sellPrice = mat.price.buy || 0;
+      return total + mat.count * sellPrice;
+    }, 0);
+  };
+
   const materialsByCategory = materials.reduce((acc, material) => {
     const category = `${material.rarity} ${material.category}`;
     if (!acc[category]) {
@@ -54,7 +60,6 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
     return acc;
   }, {} as Record<string, Material[]>);
 
-  // Ordena materiais por valor dentro de cada categoria
   Object.values(materialsByCategory).forEach((categoryMaterials) => {
     categoryMaterials.sort(
       (a, b) => b.price.sell * b.count - a.price.sell * a.count
@@ -74,7 +79,28 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
         ([category, items]) =>
           items.length > 0 && (
             <Card key={category} className="p-4">
-              <h3 className="text-lg font-bold mb-4">{category}</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">{category}</h3>
+                <div className="text-right">
+                  <p className="font-bold">
+                    Total da Categoria (Ordem de venda):{" "}
+                    {formatGold(calculateTotalValue(items))} (
+                    {((calculateTotalValue(items) / totalValue) * 100).toFixed(
+                      1
+                    )}
+                    %)
+                  </p>
+                  <p className="font-bold">
+                    Total da Categoria (Ordem de compra):{" "}
+                    {formatGold(calculateBuyTotalValue(items))} (
+                    {(
+                      (calculateBuyTotalValue(items) / totalValue) *
+                      100
+                    ).toFixed(1)}
+                    %)
+                  </p>
+                </div>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -110,13 +136,6 @@ export function MaterialsGrid({ materials }: MaterialsGridProps) {
                   ))}
                 </TableBody>
               </Table>
-              <div className="mt-4 text-right">
-                <p className="font-bold">
-                  Total da Categoria: {formatGold(calculateTotalValue(items))} (
-                  {((calculateTotalValue(items) / totalValue) * 100).toFixed(1)}
-                  %)
-                </p>
-              </div>
             </Card>
           )
       )}
