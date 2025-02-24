@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { MaterialsGrid } from "@/components/MaterialsGrid";
 interface Material {
   id: number;
   name: string;
+  rarity: string;
   category: string;
   count: number;
   price: {
@@ -112,6 +113,7 @@ export default function App() {
       const itemMap = itemDetails.reduce((acc: any, item: any) => {
         acc[item.id] = {
           name: item.name,
+          rarity: item.rarity,
           category: item.type,
           icon: item.icon,
         };
@@ -123,10 +125,13 @@ export default function App() {
         id: material.id,
         name: itemMap[material.id]?.name || "Item Desconhecido",
         category: itemMap[material.id]?.category || "Sem Categoria",
+        rarity: itemMap[material.id]?.rarity || "Sem Raridade",
         count: material.count,
         price: priceMap[material.id] || { buy: 0, sell: 0 },
         icon: itemMap[material.id]?.icon,
       }));
+
+      console.log(enrichedMaterials);
 
       setMaterials(enrichedMaterials);
     } catch (error) {
@@ -145,7 +150,7 @@ export default function App() {
   return (
     <div className="container mx-auto p-4">
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <div className="p-6">
+        <div className="py-6">
           <h2 className="text-lg font-bold mb-4">
             Digite sua API Key do Guild Wars 2
           </h2>
